@@ -125,7 +125,7 @@ public class MemoryManagementApp extends Application {
                 }
             }
             // Move to the next step after all partition sizes are entered
-            showRealTimeMemoryUsageScreen();
+            showProcessCountScreen();
         });
 
         inputPartitionSizeLayout.getChildren().add(nextButton);
@@ -136,11 +136,71 @@ public class MemoryManagementApp extends Application {
         primaryStage.setScene(inputPartitionSizeScene);
     }
     
+    private void showProcessCountScreen() {
+        Label processCountLabel = new Label("输入进程数：");
+        TextField processCountTextField = new TextField();
+        Button nextButton = new Button("下一步");
 
-    // 实现其他界面的方法
+        nextButton.setOnAction(e -> {
+            try {
+                processCount = Integer.parseInt(processCountTextField.getText());
+                showInputProcessInfoScreen();
+            } catch (NumberFormatException ex) {
+                showAlert("请输入有效的数字");
+            }
+        });
 
-    private void showRealTimeMemoryUsageScreen() {
-        // 根据用户的选择实时显示内存使用情况
+        VBox inputProcessCountLayout = new VBox(10);
+        inputProcessCountLayout.getChildren().addAll(processCountLabel, processCountTextField, nextButton);
+        inputProcessCountLayout.setAlignment(Pos.CENTER);
+        inputProcessCountLayout.setPadding(new Insets(20));
+
+        Scene inputProcessCountScene = new Scene(inputProcessCountLayout, 400, 300);
+        primaryStage.setScene(inputProcessCountScene);
+    }
+
+    private void showInputProcessInfoScreen() {
+        VBox inputProcessInfoLayout = new VBox(10);
+    
+        for (int i = 0; i < processCount; i++) {
+            Label processNameLabel = new Label("输入进程 " + (i + 1) + " 的名称：");
+            TextField processNameTextField = new TextField();
+            Label processSizeLabel = new Label("输入进程 " + (i + 1) + " 的大小：");
+            TextField processSizeTextField = new TextField();
+    
+            inputProcessInfoLayout.getChildren().addAll(processNameLabel, processNameTextField, processSizeLabel, processSizeTextField);
+        }
+    
+        Button nextButton = new Button("下一步");
+        nextButton.setOnAction(e -> {
+            for (int i = 0; i < processCount; i++) {
+                TextField nameField = (TextField) inputProcessInfoLayout.getChildren().get(i * 4 + 1);
+                TextField sizeField = (TextField) inputProcessInfoLayout.getChildren().get(i * 4 + 3);
+    
+                try {
+                    String name = nameField.getText();
+                    int size = Integer.parseInt(sizeField.getText());
+                    // You can also perform validation or additional processing here
+                } catch (NumberFormatException ex) {
+                    showAlert("请输入有效的数字");
+                    return;  // Stop processing if an error occurs
+                }
+            }
+    
+            // Move to the next step after all process information is entered
+            showMemoryAllocationMethodScreen();
+        });
+    
+        inputProcessInfoLayout.getChildren().add(nextButton);
+        inputProcessInfoLayout.setAlignment(Pos.CENTER);
+        inputProcessInfoLayout.setPadding(new Insets(20));
+    
+        Scene inputProcessInfoScene = new Scene(inputProcessInfoLayout, 400, 300);
+        primaryStage.setScene(inputProcessInfoScene);
+    }
+    
+    private void showMemoryAllocationMethodScreen(){
+
     }
 
     private void showAlert(String message) {
