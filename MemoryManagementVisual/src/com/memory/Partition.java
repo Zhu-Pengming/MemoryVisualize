@@ -1,17 +1,20 @@
-package com.memory;
+package MemoryManagementApp;
 
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 import java.util.*;
-import static com.memory.MemoryManager.MIN;
+import static MemoryManagementApp.MemoryManager.MIN;
 
 
 public class Partition {
+    private boolean allocated; 
     public static int partitionNum;
     int partitionId;
     int partitionSize;
     int blockId;
+
+
 
 
 
@@ -24,9 +27,7 @@ public class Partition {
         partitionSize = (int) size;
         blockId = partitionId;
 
-        // Initialize JavaFX visualization
-        visualizationRect = new Rectangle(partitionSize, 50);
-        visualizationRect.setFill(Color.RED); // Default color
+        
     }
 
     // JavaFX visualization
@@ -69,44 +70,26 @@ public class Partition {
     }
 
 
-    public void firstFit(PCB[] pcbs, Partition[] partitions) {
-        boolean flag;
-        int i, j;
-        String choose;
-
-        Scanner scanner = new Scanner(System.in);
-
-        do {
-
-
-            i = pcbs.length - 1;
-
-            flag = false;
-            for (j = 0; j < partitions.length; j++) {
-                if (pcbs[i].getPidSize() <= partitions[j].partitionSize) {
-                    partitions[j].blockId += partitions[j].partitionSize; // 先更新 blockId
-                    partitions[j].partitionSize -= pcbs[i].getPidSize();
-                    if (partitions[j].partitionSize <= MIN) {
-                        partitions[j].partitionSize = 0;
-                    }
-                    flag = true;
-                    break;
-                }
-            }
-
-            if(flag){
-                flag = false;
-                System.out.println("Process " + pcbs[i].getPidName() + " allocated to Partition " + partitions[j].partitionId);
-            } else {
-                System.out.println("Process " + pcbs[i].getPidName() + " allocation failed!");
-            }
-
-
-            System.out.print("Continue allocation? (Y/N): ");
-            choose = scanner.next();
-
-        } while (choose.equals("Y"));
+    public void setAllocated(boolean allocated) {
+        this.allocated = allocated;
     }
+
+    
+    public Partition[] firstFit(PCB[] pcbs, Partition[] partitions, int currentPCBIndex) {
+        for (int j = 0; j < partitions.length; j++) {
+            if (!partitions[j].isAllocated() && pcbs[currentPCBIndex].getPidSize() <= partitions[j].partitionSize) {
+                partitions[j].blockId += partitions[j].partitionSize;
+                partitions[j].partitionSize -= pcbs[currentPCBIndex].getPidSize();
+                if (partitions[j].partitionSize <= MemoryManager.MIN) {
+                    partitions[j].partitionSize = 0;
+                }
+                partitions[j].setAllocated(true);  // Mark the partition as allocated
+            }
+        }
+        
+        return partitions;  // Return the modified array
+    }
+    
 
 
     // Next Fit memory allocation algorithm
@@ -263,6 +246,10 @@ public class Partition {
         return partitionSize == 0;
     }
 }
+
+
+
+
 
 
 
