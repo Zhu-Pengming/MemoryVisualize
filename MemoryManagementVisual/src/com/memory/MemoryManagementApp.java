@@ -1,7 +1,9 @@
-package com.memory;
+package MemoryManagementApp;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -13,6 +15,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
 
 public class MemoryManagementApp extends Application implements MemoryAllocationListener{
 
@@ -26,6 +31,11 @@ public class MemoryManagementApp extends Application implements MemoryAllocation
 
     static Partition[] partitions;
     static PCB[] pcbs;
+
+    private static final Duration FRAME_DURATION = Duration.millis(1000); // Duration for each animation frame
+
+    private Timeline timeline;
+    private int currentPCBIndex;
 
     public static void main(String[] args) {
         launch(args);
@@ -176,8 +186,10 @@ public class MemoryManagementApp extends Application implements MemoryAllocation
         for (int i = 0; i < processCount; i++) {
             Label processNameLabel = new Label("输入进程 " + (i + 1) + " 的名称：");
             TextField processNameTextField = new TextField();
+            processNames[i] = processNameTextField.getText();
             Label processSizeLabel = new Label("输入进程 " + (i + 1) + " 的大小：");
             TextField processSizeTextField = new TextField();
+            processSizes[i] = Integer.parseInt(processSizeTextField.getText());
 
             inputProcessInfoLayout.getChildren().addAll(processNameLabel, processNameTextField, processSizeLabel, processSizeTextField);
         }
@@ -237,41 +249,73 @@ public class MemoryManagementApp extends Application implements MemoryAllocation
     private void performMemoryAllocation(String selectedMethod) {
         switch (selectedMethod) {
             case "First Fit":
-                // 调用您的 First Fit 内存分配算法
-                MemoryManager.firstFit();
+                currentPCBIndex = pcbs.length - 1; // Start from the last PCB
+                allocationMethod = "First Fit";
+                startMemoryAllocationAnimation(pcbs, partitions, allocationMethod);
                 break;
             case "Next Fit":
-                // 调用您的 Next Fit 内存分配算法
-                MemoryManager.nextFit();
+                allocationMethod = "Next Fit";
+                startMemoryAllocationAnimation(pcbs, partitions, allocationMethod);
                 break;
             case "Best Fit":
-                // 调用您的 Best Fit 内存分配算法
-                MemoryManager.bestFit();
+                allocationMethod = "Best Fit";
+                startMemoryAllocationAnimation(pcbs, partitions, allocationMethod);
                 break;
             case "Worst Fit":
-                // 调用您的 Worst Fit 内存分配算法
-                MemoryManager.worstFit();
+                allocationMethod = "Worst Fit";
+                startMemoryAllocationAnimation(pcbs, partitions, allocationMethod);
                 break;
             default:
                 showAlert("未知的内存分配方法");
                 return; // Stop processing if an error occurs
         }
-
-        // 分配完成后更新UI
-        updateMemoryVisualization();
     }
-
-
-
-    private void updateMemoryVisualization() {
-        int x = 100;
-        int y = 100;
-
-        Text text = new Text(x, y, "JavaFX 2.0");
-
-
+    
+    private void startMemoryAllocationAnimation(PCB[] pcbs, Partition[] partitions, String allocationMethod) {
+        timeline = new Timeline();
+        timeline.setCycleCount(Timeline.INDEFINITE);
+    
+        KeyFrame keyFrame = new KeyFrame(FRAME_DURATION, event -> {
+            if (currentPCBIndex >= 0) {
+                // Call the appropriate memory allocation method based on the selected method
+                Partition allocatedPartition = null;
+                switch (allocationMethod) {
+                    case "First Fit":
+                        allocatedPartition = MemoryManager.firstFit(pcbs, partitions, currentPCBIndex);
+                        break;
+                    case "Next Fit":
+                        allocatedPartition = MemoryManager.nextFit(pcbs, partitions, currentPCBIndex);
+                        break;
+                    case "Best Fit":
+                        allocatedPartition = MemoryManager.bestFit(pcbs, partitions, currentPCBIndex);
+                        break;
+                    case "Worst Fit":
+                        allocatedPartition = MemoryManager.worstFit(pcbs, partitions, currentPCBIndex);
+                        break;
+                }
+    
+                if (allocatedPartition != null) {
+                    System.out.println("Process " + pcbs[currentPCBIndex].getPidName() +
+                            " allocated to " + allocatedPartition.getPartitionInfo());
+    
+                    // Update the visualization after allocation
+                    allocatedPartition.updateVisualization();
+                } else {
+                    System.out.println("Process " + pcbs[currentPCBIndex].getPidName() + " allocation failed!");
+                }
+                currentPCBIndex--;
+            } else {
+                // Stop the timeline when all PCBs are processed
+                timeline.stop();
+                // Optionally, move to the next step after memory allocation
+                // showRealTimeMemoryUsageScreen();
+            }
+        });
+    
+        timeline.getKeyFrames().add(keyFrame);
+        timeline.play();
     }
-
+    
 
 
 
@@ -288,7 +332,7 @@ public class MemoryManagementApp extends Application implements MemoryAllocation
     public void memoryAllocated() {
         // This method is called when memory is allocated
         // Update the UI here
-        updateMemoryVisualization();
+        // updateMemoryVisualization();
         // You may want to add additional logic here based on the memory allocation event
         // For example, showing a success message or handling other UI updates
     }
