@@ -1,79 +1,84 @@
 package com.memory;
 
+package MemoryManagement;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import javafx.collections.FXCollections;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 
-import java.util.Arrays;
-
 public class GanttChart {
 
     private BarChart<Number, String> chart;
-    private int colorIndex = 0;
+    private Map<String, XYChart.Series<Number, String>> seriesMap;
+    private CategoryAxis yAxis;
+    private Set<String> categories; // Maintain a set of unique categories
+    private List<String> processOrder;
 
-    public GanttChart(String[] processNames) {
+    public GanttChart() {
         NumberAxis xAxis = new NumberAxis();
+        yAxis = new CategoryAxis();  
         xAxis.setAutoRanging(false);
-        xAxis.setTickUnit(1); // 设置刻度间隔为1
-        xAxis.setMinorTickCount(0); // 设置次要刻度为0
-        CategoryAxis yAxis = new CategoryAxis();
-        yAxis.setCategories(FXCollections.observableArrayList(Arrays.asList(processNames)));
+        xAxis.setTickUnit(1);
         chart = new BarChart<>(xAxis, yAxis);
         chart.setTitle("Gantt Chart");
-        chart.setCategoryGap(1);
-    }
 
+        seriesMap = new HashMap<>();
+        categories = new LinkedHashSet<>();
+        processOrder = new ArrayList<>();
+
+        
+    }
 
 
     public BarChart<Number, String> getChart() {
         return chart;
     }
 
-    public void updateGanttChart(PCB allocatedPCB, int startTime, int size) {
-        String[] vibrantColors = {
-                "#FF6347", "#FFD700", "#FF69B4", "#00FF7F",
-                "#1E90FF", "#FFA07A", "#FF4500", "#FF8C00",
-                "#8A2BE2", "#32CD32", "#FF1493", "#00FFFF"
-        };
-
-        String color = vibrantColors[colorIndex];
-
-        int endTime = startTime + size; // Calculate endTime
-
-        XYChart.Series<Number, String> series = new XYChart.Series<>();
-        series.getData().add(new XYChart.Data<>(startTime, allocatedPCB.getPidName(), new CustomData(size, color, endTime)));
-        chart.getData().add(series);
-
-        colorIndex = (colorIndex + 1) % vibrantColors.length; // Cycle through colors
+    public void updateChart(String processName, int startTime, int size) {
+        int endTime = startTime + size;
+    
+        // Add the category only if it's not in the set
+        if (!categories.contains(processName)) {
+            categories.add(processName);
+            processOrder.add(processName); // Add the process to the order list
+            yAxis.setCategories(FXCollections.observableArrayList(processOrder));
+        }
+    
+        XYChart.Series<Number, String> series = seriesMap.computeIfAbsent(processName, k -> {
+            XYChart.Series<Number, String> newSeries = new XYChart.Series<>();
+            chart.getData().add(newSeries);
+            return newSeries;
+        });
+    
+        // Use the end time as the x-coordinate, and set the correct duration
+        series.getData().add(new XYChart.Data<>(endTime, processName, new CustomData(size)));
+    
+        System.out.println("Updating Chart: Process " + processName + " - Start: " + startTime + ", End: " + endTime);
     }
 
-
-
-
+    
+    
+    
+    
     public static class CustomData {
         private double duration;
-        private String color;
-        private double endTime;
 
-        public CustomData(double duration, String color, double endTime) {
+        public CustomData(double duration) {
             this.duration = duration;
-            this.color = color;
-            this.endTime = endTime;
         }
 
         public double getDuration() {
             return duration;
         }
-
-        public String getColor() {
-            return color;
-        }
-
-        public double getEndTime() {
-            return endTime;
-        }
     }
-
 }
