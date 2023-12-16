@@ -4,25 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.util.Duration;
 
 public class MemoryManagementApp extends Application implements MemoryAllocationListener{
@@ -292,9 +282,12 @@ public class MemoryManagementApp extends Application implements MemoryAllocation
 
 
 
-    private void updateGanttChart(PCB allocatedPCB, int startTime, int size) {
-        ganttChart.updateGanttChart(allocatedPCB, startTime, size);
+    private void updateGanttChart(String processName, int startTime, int size) {
+        ganttChart.updateChart(processName, startTime, size);
     }
+
+
+
 
 
     private void startMemoryAllocationAnimation(PCB[] pcbs, Partition[] partitions, String allocationMethod) {
@@ -302,11 +295,12 @@ public class MemoryManagementApp extends Application implements MemoryAllocation
         initializeGanttChart(processNames);
         showGanttChart(processNames);
 
-
         Timeline timeline = new Timeline();
+        AtomicInteger startTime = new AtomicInteger();
 
         timeline.getKeyFrames().add(new KeyFrame(FRAME_DURATION, event -> {
             if (currentPCBIndex >= 0) {
+
                 // Call the appropriate memory allocation method based on the selected method
                 Partition[] allocatedPartitions = null;
                 switch (allocationMethod) {
@@ -325,36 +319,29 @@ public class MemoryManagementApp extends Application implements MemoryAllocation
                 }
 
                 if (allocatedPartitions != null) {
-                    int startTime = 0;
-                    for (int i = 0; i < allocatedPartitions.length; i++) {
-                        int currentIndex = currentPCBIndex - i;
-                        if (currentIndex >= 0 && currentIndex < pcbs.length) {
-                            PCB allocatedPCB = pcbs[currentIndex];
-                            if (allocatedPartitions[i].isAllocated()) {
-                                int allocatedSize = allocatedPCB.getPidSize();
-                                updateGanttChart(allocatedPCB, startTime, allocatedSize);
-                                startTime = startTime + allocatedSize;
-                                System.out.println("Allocated " + allocatedPCB.getPidName() + " at time " + startTime);
-                                lastAllocatedIndex.set(currentIndex + 1);  // Update lastAllocatedIndex
-                            }
+                    for (Partition partition : allocatedPartitions) {
+                        if (partition.isAllocated()) {
+                            PCB allocatedPCB = pcbs[currentPCBIndex];
+                            String processInfo = "Process: " + allocatedPCB.getPidName() + " - Partition: " + partition.getPartitionInfo();
+                            System.out.println(processInfo);
                         }
                     }
-                }else {
-                    // 显示文字
+                } else {
                     System.out.println("Process " + pcbs[currentPCBIndex].getPidName() + " allocation failed!");
                 }
 
+
+                updateGanttChart(pcbs[currentPCBIndex].getPidName(), startTime.get(), pcbs[currentPCBIndex].getPidSize());
+                startTime.set(startTime.get() + pcbs[currentPCBIndex].getPidSize());
+
                 currentPCBIndex--;
-                if (currentPCBIndex < 0) {
-                    timeline.stop(); // Stop the animation when all processes are processed
-                }
             }
         }));
-
-
-        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.setCycleCount(pcbs.length); // One cycle for each process
         timeline.play();
     }
+
+
 
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
